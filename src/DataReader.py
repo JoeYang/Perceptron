@@ -1,5 +1,6 @@
 import sys
 import csv
+import json
 from Klass import Klass
 from Entity import Entity
 
@@ -12,7 +13,7 @@ class DataReader:
   	self.readTitles()
   	self.readLabels()
   	self.test()
-  	  
+
   def readTitles(self):
   	titleFile = open(self.title_file, "r")
   	for line in titleFile:

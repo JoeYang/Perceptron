@@ -6,6 +6,7 @@ class Klass:
   	self.count = 0
   	self.type_1 = 0
   	self.type_2 = 0
+  	self.weights = []
   
   def get_name(self):
   	return self.name
