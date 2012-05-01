@@ -32,13 +32,19 @@ class PerceptronModel:
   	  	self.new_weights.append(0)
   	  	self.average_weights.append(0)
   	
-  	def cleanup(self, flag):
-  	  if flag == 1:
-  	    for i in range(0, self.num_of_features):
-  	  	  self.weights[i] = (self.weights[i]*self.num_interations + self.new_weights[i])/(self.num_interations+1)
-  	  	  self.new_weights[i] = 0
-  	  #print self.weights	  
+  	def update(self):
+  	  for i in range(0, self.num_of_features):
+  	  	self.average_weights[i] += self.new_weights[i]
+  	  	self.weights[i] = self.new_weights[i]
+  	  	self.new_weights[i] = 0
   	  self.num_interations += 1	
+
+  	def get_average(self):
+  	  for i in range(0, self.num_of_features):
+  	  	self.average_weights[i] /= self.num_interations
+  	  	self.weights[i] = self.average_weights[i]	
+
+  	  	  
   	def reset(self):  
   	  for i in range(0, self.num_of_features):
   	  	self.weights[i] = 0 
@@ -83,19 +89,22 @@ class PerceptronModel:
   	FN = 0.0
   	for instance in split.test:
   	  klass = self.classify(instance)
+  	  #print klass.name, instance.real_tag
   	  if klass.name == 'ad.':
-  	  	if instance.real_tag == 'ad.':
+  	  	if instance.real_tag == 'nonad.':
+  	  	  FP += 1.0
+  	  	
+  	  if klass.name == "nonad.":
+  	  	if instance.real_tag == "nonad.":
   	  	  TP += 1.0
   	  	else:
   	  	  FN += 1.0
-  	  if klass == "nonad.":
-  	  	if instance.real_tag == "ad.":
-  	  	  FP += 1
   	P = TP/(TP + FP)
   	R = TP/(TP + FN)
-  	print "Accuracy", P,
-	print "Recall  ", R,
-	print "F-score ", 2*P*R/(P + R)
+  	print FP, FN
+  	print "Precision", P,
+	print "Recall", R,
+	print "F-score", 2*P*R/(P + R)
   
   def classify(self, instance):
   	best_score = -100000
@@ -107,27 +116,25 @@ class PerceptronModel:
   	  if score > best_score:
   	  	best_score = score
   	  	maximum_likely_klass = klass
+  	  #print score, klass.name,
+  	#print maximum_likely_klass.name, instance.real_tag  
   	return maximum_likely_klass
   
   def train(self, split):
   	iteration = 0
   	total = len(split.train)
-  	while iteration < 20:
+  	while iteration < 50:
   	  error = 0
   	  for instance in split.train:
   	  	klass = self.get_correct_klass(instance.real_tag)
   	  	guess = self.classify(instance)
   	  	if guess.name != klass.name:
-  	  	  error += 1	
-  	  	  for i in range(0, self.num_of_features):
-  	  	  	if iteration > 10:
-  	  	  	  klass.new_weights[i] = klass.weights[i] + (klass.weights[i]-guess.weights[i])*instance.features[i]
-  	  	  	else:
-  	  	  	  klass.weights[i] = klass.weights[i] + instance.features[i]*0.1
-  	  	  klass.cleanup(1)
-  	  	else:
-  	  	  klass.cleanup(0)
-  	  #print "Iteration:", iteration,"--Accuracy", total, error  
+  	  	  error += 1  	  	  
+   	  	  for i in range(0, self.num_of_features):
+  	  	  	klass.new_weights[i] = klass.weights[i] + 0.3*instance.features[i]
+  	  	  	guess.new_weights[i] = guess.weights[i] - 0.1*instance.features[i]
+  	  	  klass.update()
+  	  	  guess.update()  	
   	  iteration += 1
   	 
 
@@ -151,6 +158,8 @@ def main():
   for split in splits:
   	print "Cross Validation", index, ":",
   	pm.train(split)
+  	#for klass in pm.klasses:
+  	#  klass.get_average()
   	pm.test(split)
   	pm.reset()
   	index += 1
